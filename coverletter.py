@@ -163,18 +163,22 @@ if st.button("Generate Cover Letter and Update Resume"):
                 )
 
                 resume_pdf = create_pdf_from_text(updated_resume)
-                st.download_button(
-                    label="Download Updated Resume (PDF)",
-                    data=resume_pdf,
-                    file_name="updated_resume.pdf",
-                    mime="application/pdf"
-                )
+                st.session_state['resume_pdf'] = resume_pdf #store the created pdf in session state
+
     else:
         missing = []
         if not uploaded_file: missing.append("resume")
         if not job_description.strip(): missing.append("job description")
         if not openai_api_key: missing.append("OpenAI API key")
         st.warning(f"Please provide: {', '.join(missing)}")
+
+if 'resume_pdf' in st.session_state: #seperate button to download resume
+    st.download_button(
+        label="Download Updated Resume (PDF)",
+        data=st.session_state['resume_pdf'],
+        file_name="updated_resume.pdf",
+        mime="application/pdf"
+    )
 
 # Add some styling
 st.markdown("""
