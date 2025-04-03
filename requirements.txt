@@ -2,3 +2,4 @@ streamlit
 PyPDF2
 requests
 openai==0.28
+reportlab
