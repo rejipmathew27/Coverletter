@@ -2,7 +2,6 @@ import streamlit as st
 import PyPDF2
 import requests
 import openai
-import os
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -54,27 +53,23 @@ def generate_cover_letter(resume_text, job_description, openai_api_key):
     """Generate cover letter using OpenAI API"""
     openai.api_key = openai_api_key
     prompt = f"""
-    Create a professional cover letter based on the following resume and job description.
-    The cover letter should:
-    - Be addressed to the hiring manager
-    - Highlight relevant experience from the resume
-    - Match qualifications to the job requirements
-    - Maintain professional tone
-    - Be approximately 3-4 paragraphs
+    Write a cover letter based on this resume and job description.
 
     Resume:
-    {resume_text[:3000]}  # Truncate to prevent context overflow
+    {resume_text[:3000]}
 
     Job Description:
     {job_description[:3000]}
+
+    Cover Letter:
     """
 
     try:
         response = openai.Completion.create(
-            model="gpt-3.5-turbo-instruct",  # Or another suitable engine
+            model="gpt-3.5-turbo-instruct",
             prompt=prompt,
-            max_tokens=400,  # Adjust as needed
-            temperature=0.7,  # Adjust for creativity
+            max_tokens=500,
+            temperature=0.7,
         )
         return response.choices[0].text.strip()
     except Exception as e:
@@ -85,23 +80,23 @@ def update_resume(resume_text, job_description, openai_api_key):
     """Update resume using OpenAI API"""
     openai.api_key = openai_api_key
     prompt = f"""
-    Update the following resume based on the job description.
-    Ensure the resume highlights relevant skills and experience for the job.
-    Only add or modify details that are directly applicable to the job description.
+    Update the resume based on the job description, highlighting relevant skills and experiences.
 
     Resume:
     {resume_text[:3000]}
 
     Job Description:
     {job_description[:3000]}
+
+    Updated Resume:
     """
 
     try:
         response = openai.Completion.create(
-            model="gpt-3.5-turbo-instruct",  # Or another suitable engine
+            model="gpt-3.5-turbo-instruct",
             prompt=prompt,
-            max_tokens=500,  # Adjust as needed
-            temperature=0.6,  # Adjust for creativity
+            max_tokens=600,
+            temperature=0.6,
         )
         return response.choices[0].text.strip()
     except Exception as e:
@@ -125,7 +120,7 @@ def create_pdf_from_text(text):
 def fetch_job_description(url):
     try:
         response = requests.get(url)
-        response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+        response.raise_for_status()
         return response.text
     except requests.exceptions.RequestException as e:
         st.error(f"Error fetching URL: {e}")
@@ -136,25 +131,16 @@ if st.button("Generate Cover Letter and Update Resume"):
         st.error("Please enter your OpenAI API key.")
     elif uploaded_file and job_description.strip():
         with st.spinner("Analyzing resume and generating cover letter/updated resume..."):
-            # Extract text from PDF
             resume_text = extract_text_from_pdf(uploaded_file)
-
-            # Generate cover letter
             cover_letter = generate_cover_letter(resume_text, job_description, openai_api_key)
-
-            # Update resume
             updated_resume = update_resume(resume_text, job_description, openai_api_key)
 
             if cover_letter and updated_resume:
                 st.success("Cover Letter and Updated Resume Generated Successfully!")
                 st.markdown("---")
-                # Display cover letter in a text area
                 cover_letter_text = st.text_area("Generated Cover Letter", value=cover_letter, height=300)
-
-                # Display updated resume
                 updated_resume_text = st.text_area("Updated Resume", value=updated_resume, height=300)
 
-                # Add download buttons
                 st.download_button(
                     label="Download Cover Letter",
                     data=cover_letter_text,
@@ -163,7 +149,7 @@ if st.button("Generate Cover Letter and Update Resume"):
                 )
 
                 resume_pdf = create_pdf_from_text(updated_resume)
-                st.session_state['resume_pdf'] = resume_pdf #store the created pdf in session state
+                st.session_state['resume_pdf'] = resume_pdf
 
     else:
         missing = []
@@ -172,7 +158,7 @@ if st.button("Generate Cover Letter and Update Resume"):
         if not openai_api_key: missing.append("OpenAI API key")
         st.warning(f"Please provide: {', '.join(missing)}")
 
-if 'resume_pdf' in st.session_state: #seperate button to download resume
+if 'resume_pdf' in st.session_state:
     st.download_button(
         label="Download Updated Resume (PDF)",
         data=st.session_state['resume_pdf'],
