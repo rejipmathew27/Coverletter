@@ -28,10 +28,20 @@ class CoverLetterAI:
             return False
 
     def profile_candidate(self):
-        """Creates a candidate profile (JSON) from the resume text."""
+        """Creates a detailed candidate profile (JSON) from the resume text."""
         openai.api_key = self.openai_api_key
         prompt = f"""
-        Analyze the following resume and create a JSON object containing key information like name, contact details, skills, experience, and education.
+        Analyze the following resume and create a comprehensive JSON object containing key information like:
+        - Full Name
+        - Contact Information (phone, email, LinkedIn, etc.)
+        - Summary/Objective
+        - Detailed Skills (technical, soft, etc.)
+        - Detailed Work Experience (company, title, dates, responsibilities, achievements)
+        - Detailed Education (degree, university, dates, relevant coursework)
+        - Projects (if applicable)
+        - Awards/Certifications (if applicable)
+
+        Provide as much detail as possible.
 
         Resume:
         {self.resume_text[:3000]}
@@ -42,11 +52,17 @@ class CoverLetterAI:
             response = openai.Completion.create(
                 model="gpt-3.5-turbo-instruct",
                 prompt=prompt,
-                max_tokens=800,
+                max_tokens=1000,  # Increased max_tokens for more detail
                 temperature=0.5,
             )
-            self.candidate_profile = json.loads(response.choices[0].text.strip())
-            return True
+            try:
+                self.candidate_profile = json.loads(response.choices[0].text.strip())
+                return True
+            except json.JSONDecodeError as json_error:
+                st.error(f"Error parsing JSON from OpenAI: {json_error}")
+                st.error(f"Raw OpenAI response: {response.choices[0].text.strip()}")
+                return False
+
         except Exception as e:
             st.error(f"Error creating candidate profile: {str(e)}")
             return False
@@ -56,10 +72,13 @@ class CoverLetterAI:
         self.job_description = job_description
 
     def write_cover_letter(self):
-        """Generates a cover letter based on the candidate profile and job description."""
+        """Generates a detailed and wordy cover letter based on the candidate profile and job description."""
         openai.api_key = self.openai_api_key
         prompt = f"""
-        Write a cover letter based on the following candidate profile and job description.
+        Write a detailed and wordy cover letter based on the following comprehensive candidate profile and job description.
+        In the cover letter, emphasize the candidate's relevant skills, experiences, and achievements that align with the job requirements.
+        Clearly articulate how the candidate's background makes them a strong fit for the position.
+        Use specific examples from the candidate profile to support your claims.
 
         Candidate Profile:
         {json.dumps(self.candidate_profile, indent=4)}
@@ -73,7 +92,7 @@ class CoverLetterAI:
             response = openai.Completion.create(
                 model="gpt-3.5-turbo-instruct",
                 prompt=prompt,
-                max_tokens=600,
+                max_tokens=800, #increased max tokens
                 temperature=0.7,
             )
             return response.choices[0].text.strip()
@@ -135,7 +154,7 @@ if st.button("Generate Cover Letter"):
                 if cover_letter:
                     st.success("Cover Letter Generated Successfully!")
                     st.markdown("---")
-                    cover_letter_text = st.text_area("Generated Cover Letter", value=cover_letter, height=300)
+                    cover_letter_text = st.text_area("Generated Cover Letter", value=cover_letter, height=500) #increased height
                     st.download_button(label="Download Cover Letter", data=cover_letter_text, file_name="generated_cover_letter.txt", mime="text/plain")
     else:
         missing = []
